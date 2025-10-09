@@ -52,8 +52,6 @@ REQUIRED_COLUMNS = {
     "obito", "dengue", "sigla_uf_residencia", "sexo_paciente", 
     "idade_paciente", "dias_sintomas_notificacao",
     "raca_cor_paciente", "gestante_paciente", "prova_laco",
-    *{key for key in COLUMN_KEYS if key.startswith("apresenta_")},
-    *{key for key in COLUMN_KEYS if key.startswith("possui_")},
     *NUMERIC_ATTRS
 }
 
@@ -67,7 +65,7 @@ COLUMNS_TO_DROP = {
 def uf_to_region(uf: str) -> str:
     """Converts UF (attribute "sigla_uf_residencia") into region."""
     if uf is None:
-        return "UN" # Unknown
+        return None 
     
     uf = uf.upper()
     if uf in {"AC", "AP", "AM", "PA", "RO", "RR", "TO"}:
@@ -80,7 +78,7 @@ def uf_to_region(uf: str) -> str:
         return "SE" # Southeast
     if uf in {"PR", "RS", "SC"}:
         return "S" # South
-    return "UN" # Unknown
+    return None 
 
 def group_age(age: str) -> str:
     """Converts age (attribute "idade_paciente") into a category based on
@@ -88,10 +86,13 @@ def group_age(age: str) -> str:
     if age is None:
         return None
     
-    if age == "2-001":
-        return "1" # Infants (< 1 year)
-    
     val_type, age_val = tuple(map(int, age.split("-")))
+
+    if val_type == 3:
+        if age_val > 12:
+            return None
+        return "1"
+    
     if val_type != 4 or age_val > 120:
         return None # Inconsistent or wrong data
     
@@ -114,11 +115,14 @@ def process_age_as_numeric(age: str) -> int:
     if age is None:
         return None
     
-    if age == "2-001":
+    val_type, age_val = tuple(map(int, age.split("-")))
+
+    if val_type == 3:
+        if age_val > 12:
+            return None
         return 0
     
-    val_type, age_val = tuple(map(int, age.split("-")))
-    if val_type != 4 or age_val > 120:
+    if val_type != 4 or age_val > 120 or age_val < 1:
         return None # Inconsistent or wrong data
     
     return age_val
@@ -184,6 +188,8 @@ if __name__ == "__main__":
     df = df.dropna(axis=0, how="any", subset=list(REQUIRED_COLUMNS))
     df = df[df["dengue"] == 1]
 
+    df["sigla_uf_residencia"] = df["sigla_uf_residencia"].apply(uf_to_region)
+
     # Process numeric columns
     if convert_categorical:
         df["idade_paciente"] = df["idade_paciente"].apply(process_age_as_numeric)
@@ -202,8 +208,6 @@ if __name__ == "__main__":
 
     # Remove columns with no valid data
     df = df.dropna(axis=1, how='all')
-
-    df["sigla_uf_residencia"] = df["sigla_uf_residencia"].apply(uf_to_region)
 
     # 9/I - Ignorado
     df["raca_cor_paciente"] = df["raca_cor_paciente"].fillna(value="9")
