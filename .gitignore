@@ -1,3 +1,6 @@
 /.venv/
 /.vscode/
 __pycache__/
+
+data/4_gold/
+data/fat_sinan/
