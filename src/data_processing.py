@@ -19,19 +19,13 @@ PATIENT_ATTRS = {
     "apresenta_conjutivite", "apresenta_dor_retroorbital", "apresenta_artralgia", 
     "apresenta_artrite", "apresenta_leucopenia", "apresenta_petequias", 
     "prova_laco",
-
-    "classificacao_final"
 }
 
 BINARY_ATTRS = {
-    key for key in PATIENT_ATTRS 
-    if key.startswith(("possui_", "apresenta_"))
+    key for key in PATIENT_ATTRS if key.startswith(("possui_", "apresenta_"))
 }
 NUMERIC_ATTRS = {"idade_paciente", "dias_sintomas_notificacao"}
-CATEGORICAL_ATTRS = {
-    key for key in PATIENT_ATTRS 
-    if key not in BINARY_ATTRS and key not in NUMERIC_ATTRS and key != "classificacao_final"
-}
+CATEGORICAL_ATTRS = PATIENT_ATTRS - BINARY_ATTRS - NUMERIC_ATTRS
 
 
 def uf_to_region(uf: str) -> str:
@@ -112,7 +106,6 @@ def process_age_as_numeric(age: str) -> int:
     
     if val_type != 4 or age_val > 120 or age_val < 1:
         return None # Inconsistent or wrong data
-    
     return age_val
 
 
@@ -126,7 +119,6 @@ def process_diagnosis_delay_as_numeric(diagnosis_delay: str) -> int:
     
     if diagnosis_delay < 0:
         return None # Invalid data
-    
     return diagnosis_delay
     
 
@@ -159,15 +151,33 @@ if __name__ == "__main__":
         else:
             output_path = input_path.parent / (input_path.name + ".csv")
 
-    # Remove non-infected cases or patients missing essential data
+    df = df[df["sexo_paciente"].isin(["M", "F"])]
+    df.loc[df["sexo_paciente"] == "M", "gestante_paciente"] = "6"
+    df["gestante_paciente"] = df["gestante_paciente"].fillna("9")
+
+    df["raca_cor_paciente"] = df["raca_cor_paciente"].fillna("9")
+
+    # Remove rows with missing data
     df = df.dropna(axis=0, how="any", subset=list(PATIENT_ATTRS))
-    df = df.loc[(df["classificacao_final"] != "5") | (df["classificacao_final"] != "13")]
+
+    # Remove non-infected cases or Chikungunya cases
+    df = df[df["classificacao_final"].isin(["10", "11", "12"])]
+
+    target_map = {
+        "10": "low_risk", # 10 = Dengue
+        "11": "alarm",    # 11 = Dengue com Sinais de Alarme
+        "12": "severe"    # 12 = Dengue Grave
+    }
+    df["severity"] = df["classificacao_final"].map(target_map)
+
+    df = df.drop("classificacao_final", axis=1)
 
     df["sigla_uf_residencia"] = df["sigla_uf_residencia"].apply(uf_to_region)
     df = df.dropna(axis=0, how="any", subset=["sigla_uf_residencia"])
 
+    cols_to_keep = list(PATIENT_ATTRS) + ["severity"]
     df.drop(
-        [col for col in df.columns if col not in PATIENT_ATTRS], 
+        [col for col in df.columns if col not in cols_to_keep], 
         inplace=True, axis=1
     )
 
