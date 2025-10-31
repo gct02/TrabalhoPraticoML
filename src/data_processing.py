@@ -1,6 +1,4 @@
-import re
 import pandas as pd
-import numpy as np
 from pathlib import Path
 from typing import Dict, Any
 
@@ -18,7 +16,7 @@ PATIENT_ATTRS = {
     "apresenta_dor_costas", "apresenta_mialgia", "apresenta_vomito", 
     "apresenta_conjutivite", "apresenta_dor_retroorbital", "apresenta_artralgia", 
     "apresenta_artrite", "apresenta_leucopenia", "apresenta_petequias", 
-    "prova_laco",
+    "prova_laco"
 }
 
 BINARY_ATTRS = {
@@ -158,7 +156,8 @@ if __name__ == "__main__":
     df["raca_cor_paciente"] = df["raca_cor_paciente"].fillna("9")
 
     # Remove rows with missing data
-    df = df.dropna(axis=0, how="any", subset=list(PATIENT_ATTRS))
+    required_cols = list(PATIENT_ATTRS) + ["evolucao_caso", "classificacao_final"]
+    df = df.dropna(axis=0, how="any", subset=required_cols)
 
     # Remove non-infected cases or Chikungunya cases
     df = df[df["classificacao_final"].isin(["10", "11", "12"])]
@@ -169,8 +168,9 @@ if __name__ == "__main__":
         "12": "severe"    # 12 = Dengue Grave
     }
     df["severity"] = df["classificacao_final"].map(target_map)
+    df.loc[df["evolucao_caso"] == "2", "severity"] = "lethal"
 
-    df = df.drop("classificacao_final", axis=1)
+    df = df.drop(["evolucao_caso", "classificacao_final"], axis=1)
 
     df["sigla_uf_residencia"] = df["sigla_uf_residencia"].apply(uf_to_region)
     df = df.dropna(axis=0, how="any", subset=["sigla_uf_residencia"])

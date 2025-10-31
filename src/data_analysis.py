@@ -59,10 +59,10 @@ if __name__ == "__main__":
     print_data_info(df)
 
     df = df.dropna(axis=1, how='all')
-    df = df.dropna(axis=0, how="any", subset=["obito", "dengue"])
+    df = df.dropna(axis=0, how="any", subset=["classificacao_final"])
 
-    correlated = collect_correlated_variables(df, threshold=0.4)
-    print("\n--- Highly Correlated Variables (Cramér's V > 0.4) ---")
-    for var1, var2, v in correlated:
-        print(f"{var1} - {var2}: {v:.4f}")
+    # correlated = collect_correlated_variables(df, threshold=0.4)
+    # print("\n--- Highly Correlated Variables (Cramér's V > 0.4) ---")
+    # for var1, var2, v in correlated:
+    #     print(f"{var1} - {var2}: {v:.4f}")
 
