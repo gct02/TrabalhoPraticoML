@@ -1,0 +1,11 @@
+# Classificação
+DESCARTADO = "5"
+DENGUE = "10"
+DENGUE_ALARME = "11"
+DENGUE_GRAVE = "12"
+CHIKUNGUNYA = "13"
+DENGUE_FATAL = "14" # Novo atributo
+
+# Evolução do caso
+OBITO_POR_AGRAVO = "2"
+OBITO_POR_OUTRAS_CAUSAS = "3"

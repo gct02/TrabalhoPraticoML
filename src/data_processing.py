@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 from typing import Dict, Any
+from utils.constants import *
 
 
 PATIENT_ATTRS = {
@@ -160,15 +161,15 @@ if __name__ == "__main__":
     df = df.dropna(axis=0, how="any", subset=required_cols)
 
     # Remove non-infected cases or Chikungunya cases
-    df = df[df["classificacao_final"].isin(["10", "11", "12"])]
+    df = df[df["classificacao_final"].isin([DENGUE, DENGUE_ALARME, DENGUE_GRAVE])]
 
     target_map = {
-        "10": "low_risk", # 10 = Dengue
-        "11": "alarm",    # 11 = Dengue com Sinais de Alarme
-        "12": "severe"    # 12 = Dengue Grave
+        DENGUE: "low_risk",
+        DENGUE_ALARME: "alarm",
+        DENGUE_GRAVE: "severe" 
     }
     df["severity"] = df["classificacao_final"].map(target_map)
-    df.loc[df["evolucao_caso"] == "2", "severity"] = "lethal"
+    df.loc[df["evolucao_caso"] == OBITO_POR_AGRAVO, "severity"] = "lethal"
 
     df = df.drop(["evolucao_caso", "classificacao_final"], axis=1)
 
