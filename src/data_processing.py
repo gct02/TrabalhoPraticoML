@@ -4,29 +4,6 @@ from typing import Dict, Any
 from utils.constants import *
 
 
-PATIENT_ATTRS = {
-    "sigla_uf_residencia", "idade_paciente", "sexo_paciente", 
-    "raca_cor_paciente", "gestante_paciente",
-    "dias_sintomas_notificacao",
-
-    "possui_doenca_autoimune", "possui_diabetes", "possui_doencas_hematologicas",
-    "possui_hepatopatias", "possui_doenca_renal", "possui_hipertensao",
-    "possui_doenca_acido_peptica",
-
-    "apresenta_febre", "apresenta_cefaleia", "apresenta_exantema",
-    "apresenta_dor_costas", "apresenta_mialgia", "apresenta_vomito", 
-    "apresenta_conjutivite", "apresenta_dor_retroorbital", "apresenta_artralgia", 
-    "apresenta_artrite", "apresenta_leucopenia", "apresenta_petequias", 
-    "prova_laco"
-}
-
-BINARY_ATTRS = {
-    key for key in PATIENT_ATTRS if key.startswith(("possui_", "apresenta_"))
-}
-NUMERIC_ATTRS = {"idade_paciente", "dias_sintomas_notificacao"}
-CATEGORICAL_ATTRS = PATIENT_ATTRS - BINARY_ATTRS - NUMERIC_ATTRS
-
-
 def uf_to_region(uf: str) -> str:
     """Converts UF (attribute "sigla_uf_residencia") into region."""
     if uf is None:
