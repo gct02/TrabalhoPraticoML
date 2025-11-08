@@ -116,10 +116,26 @@ if __name__ == "__main__":
     convert_categorical = args['convert_categorical']
     output_path = args['output']
 
-    try:
-        df = pd.read_parquet(input_path)
-    except Exception as e:
-        raise RuntimeError(f"Error reading input file {input_path}: {e}")
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file {input_path} does not exist.")
+
+    if input_path.is_dir():
+        # Read all Parquet files in the directory
+        # and join them into a single DataFrame
+        df_list = []
+        for file_path in input_path.glob("*.parquet"):
+            try:
+                df_part = pd.read_parquet(file_path)
+                df_list.append(df_part)
+            except Exception as e:
+                raise RuntimeError(f"Error reading input file {file_path}: {e}")
+        df = pd.concat(df_list, ignore_index=True)
+    else:
+        # Read single Parquet file
+        try:
+            df = pd.read_parquet(input_path)
+        except Exception as e:
+            raise RuntimeError(f"Error reading input file {input_path}: {e}")
     
     if output_path is None:
         if convert_categorical:
@@ -146,7 +162,7 @@ if __name__ == "__main__":
         DENGUE_GRAVE: "severe" 
     }
     df["severity"] = df["classificacao_final"].map(target_map)
-    df.loc[df["evolucao_caso"] == OBITO_POR_AGRAVO, "severity"] = "lethal"
+    df.loc[df["evolucao_caso"] == OBITO_POR_AGRAVO, "severity"] = "severe"
 
     df = df.drop(["evolucao_caso", "classificacao_final"], axis=1)
 

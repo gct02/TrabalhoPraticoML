@@ -26,7 +26,8 @@ PATIENT_ATTRS = {
 }
 
 BINARY_ATTRS = {
-    key for key in PATIENT_ATTRS if key.startswith(("possui_", "apresenta_"))
+    "prova_laco",
+    *{key for key in PATIENT_ATTRS if key.startswith(("possui_", "apresenta_"))}
 }
 NUMERIC_ATTRS = {"idade_paciente", "dias_sintomas_notificacao"}
 
