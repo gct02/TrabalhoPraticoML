@@ -149,6 +149,8 @@ if __name__ == "__main__":
 
     df["raca_cor_paciente"] = df["raca_cor_paciente"].fillna("9")
 
+    df["prova_laco"] = df["prova_laco"].fillna("2")
+
     # Remove rows with missing data
     required_cols = list(PATIENT_ATTRS) + ["evolucao_caso", "classificacao_final"]
     df = df.dropna(axis=0, how="any", subset=required_cols)
