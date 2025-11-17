@@ -111,16 +111,71 @@ def parse_args() -> Dict[str, Any]:
     return vars(parser.parse_args())
 
 
-if __name__ == "__main__":
-    args = parse_args()
+def process_data(df: pd.DataFrame, as_nominal: bool) -> pd.DataFrame:
+    """Process the input DataFrame according to the specified settings."""
+    df_cp = df.copy()
 
-    input_path = Path(args['input'])
-    nominal = args['nominal']
-    output_path = args['output']
+    df_cp = df_cp[df_cp["sexo_paciente"].isin(["M", "F"])]
+    df_cp.loc[df_cp["sexo_paciente"] == "M", "gestante_paciente"] = "6"
 
-    if not input_path.exists():
-        raise FileNotFoundError(f"Input file {input_path} does not exist.")
+    df_cp["gestante_paciente"] = df_cp["gestante_paciente"].fillna("9")
+    df_cp["raca_cor_paciente"] = df_cp["raca_cor_paciente"].fillna("9")
 
+    for col in BINARY_ATTRS:
+        df_cp[col] = df_cp[col].fillna("2")
+
+    # Remove rows with missing data
+    required_cols = list(PATIENT_ATTRS) + ["evolucao_caso", "classificacao_final"]
+    df_cp = df_cp.dropna(axis=0, how="any", subset=required_cols)
+
+    # Remove non-infected cases or Chikungunya cases
+    df_cp = df_cp[df_cp["classificacao_final"].isin([DENGUE, DENGUE_ALARME, DENGUE_GRAVE])]
+
+    target_map = {
+        DENGUE: "low_risk",
+        DENGUE_ALARME: "alarm",
+        DENGUE_GRAVE: "severe" 
+    }
+    df_cp["severity"] = df_cp["classificacao_final"].map(target_map)
+    df_cp.loc[df_cp["evolucao_caso"] == OBITO_POR_AGRAVO, "severity"] = "severe"
+
+    df_cp = df_cp.drop(["evolucao_caso", "classificacao_final"], axis=1)
+
+    df_cp["sigla_uf_residencia"] = df_cp["sigla_uf_residencia"].apply(uf_to_region)
+    df_cp = df_cp.dropna(axis=0, how="any", subset=["sigla_uf_residencia"])
+
+    cols_to_keep = list(PATIENT_ATTRS) + ["severity"]
+    df_cp.drop(
+        [col for col in df_cp.columns if col not in cols_to_keep], 
+        inplace=True, axis=1
+    )
+
+    if as_nominal:
+        df_cp["idade_paciente"] = df_cp["idade_paciente"].apply(group_age)
+        df_cp["dias_sintomas_notificacao"] = df_cp["dias_sintomas_notificacao"].apply(group_diagnosis_delay)
+        df_cp = df_cp.dropna(axis=0, how="any", subset=list(NUMERIC_ATTRS))
+    else:
+        df_cp["idade_paciente"] = df_cp["idade_paciente"].apply(process_age_as_numeric)
+        df_cp["dias_sintomas_notificacao"] = df_cp["dias_sintomas_notificacao"].apply(process_diagnosis_delay_as_numeric)
+        df_cp = df_cp.dropna(axis=0, how="any", subset=list(NUMERIC_ATTRS))
+
+        for col in NUMERIC_ATTRS:
+            df_cp[col] = pd.to_numeric(df_cp[col], errors='coerce', downcast='float')
+
+        for col in BINARY_ATTRS:
+            df_cp[col] = pd.to_numeric(df_cp[col], errors='coerce')
+            df_cp.loc[df_cp[col] == 2, col] = 0
+
+        cols_to_encode = [col for col in df_cp.columns if col in CATEGORICAL_ATTRS]
+        prefix_map = {col: f'one_hot_{col}' for col in cols_to_encode}
+        df_cp = pd.get_dummies(df_cp, columns=cols_to_encode, prefix=prefix_map, dtype=int)
+
+    return df_cp
+
+
+def read_parquet_data(input_path: Path) -> pd.DataFrame:
+    """Reads the input Parquet file or directory of Parquet files into a DataFrame."""
+    input_path = Path(input_path)
     if input_path.is_dir():
         # Read all Parquet files in the directory
         # and join them into a single DataFrame
@@ -138,66 +193,36 @@ if __name__ == "__main__":
             df = pd.read_parquet(input_path)
         except Exception as e:
             raise RuntimeError(f"Error reading input file {input_path}: {e}")
+    return df
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    input_path = Path(args['input'])
+    as_nominal = args['nominal']
+    output_path = args['output']
+
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file {input_path} does not exist.")
+
+    try:
+        df = read_parquet_data(input_path)
+    except Exception as e:
+        raise RuntimeError(f"Error reading input data: {e}")
     
     if output_path is None:
-        if nominal:
-            output_path = input_path.parent / (input_path.name + "nominal.csv")
+        if input_path.is_dir():
+            input_dir = input_path
+            base_name = "full"
         else:
-            output_path = input_path.parent / (input_path.name + ".csv")
+            input_dir = input_path.parent
+            base_name = input_path.stem
 
-    df = df[df["sexo_paciente"].isin(["M", "F"])]
-    df.loc[df["sexo_paciente"] == "M", "gestante_paciente"] = "6"
+        if as_nominal:
+            output_path = input_dir / (base_name + "-processed-nominal.csv")
+        else:
+            output_path = input_dir / (base_name + "-processed.csv")
 
-    df["gestante_paciente"] = df["gestante_paciente"].fillna("9")
-    df["raca_cor_paciente"] = df["raca_cor_paciente"].fillna("9")
-
-    for col in BINARY_ATTRS:
-        df[col] = df[col].fillna("2")
-
-    # Remove rows with missing data
-    required_cols = list(PATIENT_ATTRS) + ["evolucao_caso", "classificacao_final"]
-    df = df.dropna(axis=0, how="any", subset=required_cols)
-
-    # Remove non-infected cases or Chikungunya cases
-    df = df[df["classificacao_final"].isin([DENGUE, DENGUE_ALARME, DENGUE_GRAVE])]
-
-    target_map = {
-        DENGUE: "low_risk",
-        DENGUE_ALARME: "alarm",
-        DENGUE_GRAVE: "severe" 
-    }
-    df["severity"] = df["classificacao_final"].map(target_map)
-    df.loc[df["evolucao_caso"] == OBITO_POR_AGRAVO, "severity"] = "severe"
-
-    df = df.drop(["evolucao_caso", "classificacao_final"], axis=1)
-
-    df["sigla_uf_residencia"] = df["sigla_uf_residencia"].apply(uf_to_region)
-    df = df.dropna(axis=0, how="any", subset=["sigla_uf_residencia"])
-
-    cols_to_keep = list(PATIENT_ATTRS) + ["severity"]
-    df.drop(
-        [col for col in df.columns if col not in cols_to_keep], 
-        inplace=True, axis=1
-    )
-
-    if nominal:
-        df["idade_paciente"] = df["idade_paciente"].apply(group_age)
-        df["dias_sintomas_notificacao"] = df["dias_sintomas_notificacao"].apply(group_diagnosis_delay)
-        df = df.dropna(axis=0, how="any", subset=list(NUMERIC_ATTRS))
-    else:
-        df["idade_paciente"] = df["idade_paciente"].apply(process_age_as_numeric)
-        df["dias_sintomas_notificacao"] = df["dias_sintomas_notificacao"].apply(process_diagnosis_delay_as_numeric)
-        df = df.dropna(axis=0, how="any", subset=list(NUMERIC_ATTRS))
-
-        for col in NUMERIC_ATTRS:
-            df[col] = pd.to_numeric(df[col], errors='coerce', downcast='float')
-
-        for col in BINARY_ATTRS:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-            df.loc[df[col] == 2, col] = 0
-
-        cols_to_encode = [col for col in df.columns if col in CATEGORICAL_ATTRS]
-        prefix_map = {col: f'one_hot_{col}' for col in cols_to_encode}
-        df = pd.get_dummies(df, columns=cols_to_encode, prefix=prefix_map, dtype=int)
-
-    df.to_csv(output_path, encoding='utf-8', index=False)
+    df_processed = process_data(df, as_nominal)
+    df_processed.to_csv(output_path, encoding='utf-8', index=False)
