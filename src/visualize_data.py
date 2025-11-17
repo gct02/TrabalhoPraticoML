@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from collections import Counter
 
 # NOTE: The data is already normalized
-df = pd.read_csv("data/processed/processed-2021-2023-numeric.csv")
+df = pd.read_csv("../data/3_gold/dataset-processed.csv")
 df = df.sample(n=50000, random_state=42)
 
 X = df.drop("severity", axis=1)
@@ -42,6 +42,5 @@ plt.legend(title='Class Distribution')
 plt.grid(True)
 plt.show()
 
-# --- Optional: Print explained variance ratio ---
 print(f"Explained variance ratio by principal components: {pca.explained_variance_ratio_}")
 print(f"Total explained variance by 2 components: {pca.explained_variance_ratio_.sum()*100:.2f}%")

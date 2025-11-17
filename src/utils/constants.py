@@ -32,3 +32,10 @@ BINARY_ATTRS = {
 NUMERIC_ATTRS = {"idade_paciente", "dias_sintomas_notificacao"}
 
 CATEGORICAL_ATTRS = PATIENT_ATTRS - BINARY_ATTRS - NUMERIC_ATTRS
+
+PATIENT_DISEASES = {
+    key for key in PATIENT_ATTRS if key.startswith(("possui_"))
+}
+PATIENT_SYMPTOMS = {
+    key for key in PATIENT_ATTRS if key.startswith("apresenta_")
+}
