@@ -56,9 +56,12 @@ def group_diagnosis_delay(diagnosis_delay: str) -> str:
     """Converts the symptoms-diagnosis delay (attribute "dias_sintomas_notificacao")
     into a category based on a clinical phase-based grouping."""
     try:
-        diagnosis_delay = -1 * int(diagnosis_delay) # Negative value
+        diagnosis_delay = int(diagnosis_delay)
     except Exception:
         return None
+    
+    if diagnosis_delay < 0:
+        return None # Invalid data
     
     if diagnosis_delay <= 3:
         return "1" # Early diagnosis
@@ -89,7 +92,7 @@ def process_diagnosis_delay_as_numeric(diagnosis_delay: str) -> int:
     """Converts the symptoms-diagnosis delay (attribute "dias_sintomas_notificacao")
     into a numeric value in days. Invalid data is set to None."""
     try:
-        diagnosis_delay = -1 * int(diagnosis_delay) # Negative value
+        diagnosis_delay = int(diagnosis_delay)
     except Exception:
         return None
     
@@ -149,7 +152,8 @@ if __name__ == "__main__":
 
     df["raca_cor_paciente"] = df["raca_cor_paciente"].fillna("9")
 
-    df["prova_laco"] = df["prova_laco"].fillna("2")
+    for col in BINARY_ATTRS:
+        df[col] = df[col].fillna("2")
 
     # Remove rows with missing data
     required_cols = list(PATIENT_ATTRS) + ["evolucao_caso", "classificacao_final"]

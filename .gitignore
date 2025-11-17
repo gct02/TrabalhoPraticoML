@@ -2,9 +2,7 @@
 /.vscode/
 __pycache__/
 
-data/4_gold/
-data/fat_sinan/
-data/processed/
+data/3_gold/
 
 src/decision_tree_categorical.html
 src/Atividade_prática_Árvores_de_Decisão.ipynb
