@@ -31,6 +31,33 @@ def collect_correlated_variables(df, threshold=0.4):
     return correlated
 
 
+def make_correlation_matrix(df):
+    cols = df.columns
+    n_cols = len(cols)
+    corr_matrix = np.zeros((n_cols, n_cols))
+
+    for i in range(n_cols):
+        col_i = cols[i]
+        for j in range(n_cols):
+            col_j = cols[j]
+            contingency_table = pd.crosstab(df[col_i], df[col_j], dropna=True)
+            v = cramers_v(contingency_table)
+            corr_matrix[i, j] = v
+
+    return pd.DataFrame(corr_matrix, index=cols, columns=cols)
+
+
+def plot_correlation_matrix(corr_matrix, output_path=None):
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm", cbar=True)
+    plt.title("Cramér's V Correlation Heatmap")
+    plt.tight_layout()
+    if output_path:
+        plt.savefig(output_path)
+    else:
+        plt.show()
+
+
 def print_data_info(df):
     print("--- Data Info ---")
     df.info()
@@ -54,12 +81,15 @@ if __name__ == "__main__":
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', None)
 
-    df = pd.read_parquet(input_path)
+    df = pd.read_csv(input_path)
 
     print_data_info(df)
 
     df = df.dropna(axis=1, how='all')
     df = df.dropna(axis=0, how="any", subset=["classificacao_final"])
+
+    corr_matrix = make_correlation_matrix(df)
+    plot_correlation_matrix(corr_matrix, output_path="correlation_heatmap.png")
 
     # correlated = collect_correlated_variables(df, threshold=0.4)
     # print("\n--- Highly Correlated Variables (Cramér's V > 0.4) ---")

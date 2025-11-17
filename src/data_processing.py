@@ -105,10 +105,9 @@ def parse_args() -> Dict[str, Any]:
     import argparse
 
     parser = argparse.ArgumentParser(description="Process SINAN data.")
-    parser.add_argument('input', type=str, help='Input Parquet file path')
-    parser.add_argument('-c', '--convert_categorical', action='store_true', 
-                        help='Convert categorical attributes to numeric')
-    parser.add_argument('-o', '--output', default=None, type=str, help='Output CSV file path')
+    parser.add_argument('input', type=str, help='Input Parquet file path.')
+    parser.add_argument('-n', '--nominal', action='store_true', help='Make all attributes nominal.')
+    parser.add_argument('-o', '--output', default=None, type=str, help='Output CSV file path.')
     return vars(parser.parse_args())
 
 
@@ -116,7 +115,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     input_path = Path(args['input'])
-    convert_categorical = args['convert_categorical']
+    nominal = args['nominal']
     output_path = args['output']
 
     if not input_path.exists():
@@ -141,15 +140,15 @@ if __name__ == "__main__":
             raise RuntimeError(f"Error reading input file {input_path}: {e}")
     
     if output_path is None:
-        if convert_categorical:
-            output_path = input_path.parent / (input_path.name + "numeric.csv")
+        if nominal:
+            output_path = input_path.parent / (input_path.name + "nominal.csv")
         else:
             output_path = input_path.parent / (input_path.name + ".csv")
 
     df = df[df["sexo_paciente"].isin(["M", "F"])]
     df.loc[df["sexo_paciente"] == "M", "gestante_paciente"] = "6"
-    df["gestante_paciente"] = df["gestante_paciente"].fillna("9")
 
+    df["gestante_paciente"] = df["gestante_paciente"].fillna("9")
     df["raca_cor_paciente"] = df["raca_cor_paciente"].fillna("9")
 
     for col in BINARY_ATTRS:
@@ -181,14 +180,17 @@ if __name__ == "__main__":
         inplace=True, axis=1
     )
 
-    # Process numeric columns
-    if convert_categorical:
+    if nominal:
+        df["idade_paciente"] = df["idade_paciente"].apply(group_age)
+        df["dias_sintomas_notificacao"] = df["dias_sintomas_notificacao"].apply(group_diagnosis_delay)
+        df = df.dropna(axis=0, how="any", subset=list(NUMERIC_ATTRS))
+    else:
         df["idade_paciente"] = df["idade_paciente"].apply(process_age_as_numeric)
         df["dias_sintomas_notificacao"] = df["dias_sintomas_notificacao"].apply(process_diagnosis_delay_as_numeric)
         df = df.dropna(axis=0, how="any", subset=list(NUMERIC_ATTRS))
+
         for col in NUMERIC_ATTRS:
             df[col] = pd.to_numeric(df[col], errors='coerce', downcast='float')
-            df[col] = (df[col] - df[col].mean()) / (df[col].std() + 1e-8)
 
         for col in BINARY_ATTRS:
             df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -197,9 +199,5 @@ if __name__ == "__main__":
         cols_to_encode = [col for col in df.columns if col in CATEGORICAL_ATTRS]
         prefix_map = {col: f'one_hot_{col}' for col in cols_to_encode}
         df = pd.get_dummies(df, columns=cols_to_encode, prefix=prefix_map, dtype=int)
-    else:
-        df["idade_paciente"] = df["idade_paciente"].apply(group_age)
-        df["dias_sintomas_notificacao"] = df["dias_sintomas_notificacao"].apply(group_diagnosis_delay)
-        df = df.dropna(axis=0, how="any", subset=list(NUMERIC_ATTRS))
 
     df.to_csv(output_path, encoding='utf-8', index=False)
