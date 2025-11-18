@@ -1,0 +1,378 @@
+% filepath: /home/max/ML/TrabalhoPraticoML/relatorio.tex
+\documentclass[12pt,a4paper]{article}
+
+% Pacotes
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Configurações de página
+\geometry{left=3cm,right=2cm,top=3cm,bottom=2cm}
+
+% Configurações de código
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    language=Python,
+    commentstyle=\color{gray},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red}
+}
+
+% Informações do documento
+\title{Trabalho Prático I - INF01017 \\
+\large Modelos Interpretáveis para Previsão de Gravidade de Casos de Dengue}
+\author{Gabriel Carvalho Tavares \\ Maximus Borges da Rosa}
+\date{
+    Universidade Federal do Rio Grande do Sul \\
+    Professora: Nome da Professora \\
+    \vspace{1cm}
+    \today
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Este relatório apresenta o desenvolvimento de um modelo de aprendizado de máquina para classificação da gravidade de casos de dengue. O trabalho abrange desde a definição do problema até a avaliação de diferentes algoritmos, incluindo análise exploratória dos dados, pré-processamento, e comparação de desempenho entre modelos.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%==============================================================================
+\section{Definição do Problema e Coleta de Dados}
+%==============================================================================
+
+Nosso trabalho tem como objetivo desenvolver um modelo baseado em AM para prever a gravidade de um caso de dengue a partir de informações gerais do paciente, dados de residência, características da notificação individual, dados clínicos e dados laboratoriais de pacientes. Para tanto, utilizamos o conjunto de dados do Sistema de Informação de Agravos de Notificação (SINAN), disponibilizado em Base dos Dados Base dos Dados - Conjuntos de dados abertos pelo Ministério da Saúde.
+
+\subsection{Contextualização}
+% Descreva o contexto do problema de dengue no Brasil
+% Importância da classificação de gravidade
+% Justificativa para uso de ML
+
+\subsection{Definição do Problema}
+% Problema de classificação multiclasse
+% Classes: low_risk, alarm, severe
+% Objetivo: predizer gravidade com base em características clínicas
+
+\subsection{Fonte dos Dados}
+% SINAN (Sistema de Informação de Agravos de Notificação)
+% Período de coleta
+% Número inicial de registros
+% Descrição das variáveis disponíveis
+
+\subsection{Caracterização do Dataset}
+% Número de features
+% Tipos de atributos (categóricos, numéricos)
+% Distribuição das classes (desbalanceamento)
+
+%==============================================================================
+\section{Análise Exploratória}
+%==============================================================================
+
+\subsection{Análise Descritiva}
+% Estatísticas descritivas das variáveis numéricas
+% Tabelas de frequência para variáveis categóricas
+
+\subsection{Distribuição das Classes}
+% Gráfico de distribuição das classes
+% Discussão sobre desbalanceamento
+
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.7\textwidth]{figures/class_distribution.png}
+    \caption{Distribuição das classes no dataset.}
+    \label{fig:class_dist}
+\end{figure}
+
+\subsection{Análise de Correlação}
+% Matriz de correlação entre variáveis numéricas
+% Identificação de features relevantes
+
+\subsection{Análise de Valores Ausentes}
+% Percentual de missing values por feature
+% Estratégias para tratamento
+
+\subsection{Detecção de Outliers}
+% Box plots
+% Análise de valores extremos
+
+%==============================================================================
+\section{Pré-processamento}
+%==============================================================================
+
+\subsection{Tratamento de Valores Ausentes}
+% Métodos utilizados (remoção, imputação)
+% Justificativa das escolhas
+
+\subsection{Codificação de Variáveis Categóricas}
+% One-hot encoding
+% Label encoding
+% Features categóricas tratadas
+
+\subsection{Normalização e Padronização}
+% Normalização de features numéricas
+% Método utilizado (StandardScaler, MinMaxScaler)
+% Importância da normalização para os algoritmos escolhidos
+
+\subsection{Tratamento de Desbalanceamento}
+% Técnicas utilizadas (SMOTE, undersampling, class_weight)
+% Justificativa da abordagem escolhida
+% Impacto nas distribuições das classes
+
+\begin{table}[H]
+    \centering
+    \caption{Distribuição das classes antes e após balanceamento.}
+    \label{tab:balancing}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Classe} & \textbf{Antes} & \textbf{Após} \\
+        \midrule
+        Low Risk & X & Y \\
+        Alarm & X & Y \\
+        Severe & X & Y \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Seleção de Features}
+% Features removidas e justificativa
+% Features mantidas
+% Critérios de seleção
+
+%==============================================================================
+\section{Definição da Abordagem, Algoritmos e Estratégia de Avaliação}
+%==============================================================================
+
+\subsection{Abordagem Geral}
+% Pipeline de ML adotado
+% Fluxo de trabalho
+
+\subsection{Algoritmos Selecionados}
+% Justificativa da escolha dos algoritmos
+\subsubsection{Árvore de Decisão}
+% Características do algoritmo
+% Vantagens e desvantagens
+% Hiperparâmetros principais
+
+\subsubsection{Random Forest}
+% Ensemble learning
+% Redução de variância
+% Hiperparâmetros
+
+\subsubsection{Gradient Boosting}
+% XGBoost ou LightGBM
+% Boosting vs Bagging
+% Configurações
+
+\subsubsection{Outros Algoritmos}
+% SVM, KNN, Naive Bayes, etc.
+% Breve descrição
+
+\subsection{Estratégia de Avaliação}
+
+\subsubsection{Particionamento dos Dados}
+% Holdout (70/15/15)
+% Conjunto de treino, validação e teste
+% Estratificação
+
+\subsubsection{Validação Cruzada}
+% K-fold cross-validation
+% Leave-One-Out CV (se aplicável)
+
+\subsubsection{Métricas de Avaliação}
+% Accuracy
+% Precision, Recall, F1-Score
+% Macro avg vs Weighted avg
+% Justificativa das métricas escolhidas para problema desbalanceado
+
+\subsubsection{Otimização de Hiperparâmetros}
+% Grid Search ou Random Search
+% Hiperparâmetros tunados
+% Métrica de otimização (F1-macro)
+
+%==============================================================================
+\section{Spot-checking de Algoritmos}
+%==============================================================================
+
+\subsection{Metodologia}
+% Descrição do processo de spot-checking
+% Configurações iniciais dos modelos
+% Baseline de comparação
+
+\subsection{Resultados do Spot-checking}
+
+\subsubsection{Árvore de Decisão}
+% Resultados iniciais
+% Análise de overfitting/underfitting
+% Profundidade da árvore
+
+\begin{table}[H]
+    \centering
+    \caption{Métricas da Árvore de Decisão no conjunto de validação.}
+    \label{tab:dt_metrics}
+    \begin{tabular}{lccc}
+        \toprule
+        & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        Macro Avg & 0.XXX & 0.XXX & 0.XXX \\
+        Weighted Avg & 0.XXX & 0.XXX & 0.XXX \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Random Forest}
+% Resultados
+% Comparação com árvore única
+
+\subsubsection{Gradient Boosting}
+% Desempenho
+% Tempo de treinamento
+
+\subsubsection{Outros Algoritmos}
+% Resultados dos demais modelos testados
+
+\subsection{Comparação de Desempenho}
+
+\begin{table}[H]
+    \centering
+    \caption{Comparação de F1-Score (Macro) entre algoritmos.}
+    \label{tab:comparison}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Algoritmo} & \textbf{F1-Score (Validação)} & \textbf{Tempo (s)} \\
+        \midrule
+        Árvore de Decisão & 0.XXX & X.XX \\
+        Random Forest & 0.XXX & X.XX \\
+        Gradient Boosting & 0.XXX & X.XX \\
+        SVM & 0.XXX & X.XX \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.8\textwidth]{figures/model_comparison.png}
+    \caption{Comparação visual de desempenho dos algoritmos.}
+    \label{fig:model_comp}
+\end{figure}
+
+\subsection{Seleção do Modelo Base}
+% Critérios de seleção
+% Modelo escolhido para otimização
+
+%==============================================================================
+\section{Otimização e Avaliação Final}
+%==============================================================================
+
+\subsection{Treinamento Final}
+% Retreinamento com treino + validação
+% Configuração final do modelo
+
+\subsection{Avaliação no Conjunto de Teste}
+
+\subsubsection{Métricas Gerais}
+\begin{table}[H]
+    \centering
+    \caption{Métricas do modelo final no conjunto de teste.}
+    \label{tab:final_metrics}
+    \begin{tabular}{lccc}
+        \toprule
+        & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        Macro Avg & 0.XXX & 0.XXX & 0.XXX \\
+        Weighted Avg & 0.XXX & 0.XXX & 0.XXX \\
+        \midrule
+        \multicolumn{4}{c}{\textbf{Accuracy: 0.XXX}} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Métricas por Classe}
+\begin{table}[H]
+    \centering
+    \caption{Desempenho por classe no conjunto de teste.}
+    \label{tab:class_metrics}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Classe} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        Low Risk & 0.XXX & 0.XXX & 0.XXX \\
+        Alarm & 0.XXX & 0.XXX & 0.XXX \\
+        Severe & 0.XXX & 0.XXX & 0.XXX \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Matriz de Confusão}
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.6\textwidth]{figures/confusion_matrix.png}
+    \caption{Matriz de confusão do modelo final.}
+    \label{fig:confusion}
+\end{figure}
+
+\subsection{Análise de Erros}
+% Análise dos casos mal classificados
+% Padrões de erro
+% Possíveis causas
+
+\subsection{Interpretabilidade}
+% Feature importance (se aplicável)
+% Análise de decisões do modelo
+% SHAP values (opcional)
+
+%==============================================================================
+\section{Sumarização dos Resultados}
+%==============================================================================
+
+\subsection{Principais Descobertas}
+% Síntese dos resultados obtidos
+% Modelo com melhor desempenho
+% Métricas alcançadas
+
+\subsection{Limitações do Estudo}
+% Limitações dos dados
+% Limitações dos modelos
+% Desafios encontrados
+
+\subsection{Trabalhos Futuros}
+% Possíveis melhorias
+% Outras abordagens a serem testadas
+% Coleta de mais dados
+% Feature engineering adicional
+
+\subsection{Considerações Finais}
+% Conclusão geral do trabalho
+% Aplicabilidade prática
+% Contribuições
+
+%==============================================================================
+\section*{Referências}
+%==============================================================================
+\begin{enumerate}
+    \item Scikit-learn Documentation. \url{https://scikit-learn.org/}
+    \item Imbalanced-learn Documentation. \url{https://imbalanced-learn.org/}
+    \item XGBoost Documentation. \url{https://xgboost.readthedocs.io/}
+    \item SINAN - Sistema de Informação de Agravos de Notificação. Ministério da Saúde.
+\end{enumerate}
+
+
+\section{Resultados Detalhados}
+%==============================================================================
+% Tabelas e gráficos adicionais
+
+\end{document}
