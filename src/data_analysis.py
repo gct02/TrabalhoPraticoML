@@ -8,7 +8,8 @@ from pathlib import Path
 from scipy.stats import chi2_contingency
 from data_processing import process_data, read_parquet_data
 from utils.constants import (
-    PATIENT_ATTRS, PATIENT_DISEASES, PATIENT_SYMPTOMS
+    PATIENT_ATTRS, PATIENT_DISEASES, PATIENT_SYMPTOMS,
+    NUMERIC_ATTRS
 )
 
 CORRELATIONS_TO_CHECK = [
@@ -169,23 +170,32 @@ if __name__ == "__main__":
 
     df = process_data(df, as_nominal=True)
 
-    # print("\n=== Processed Data Info ===")
-    # df.info()
+    # Normalize numeric attributes
+    for col in NUMERIC_ATTRS:
+        df[col] = (df[col] - df[col].mean()) / df[col].std()
 
-    # cramers_v_results = compute_cramers_v(df)
+    print("\n=== Processed Data Info ===")
+    df.info()
 
-    # cramers_v_results = sorted(
-    #     cramers_v_results.items(), key=lambda item: item[1], reverse=True
-    # )
-    # cramers_v_results = {k: v for k, v in cramers_v_results}
+    print("\n=== Processed Data Description ===")
+    df_description = df.describe(include='all')
+    with open(output_dir / "data_description.csv", 'w') as f:
+        df_description.to_csv(f)
+
+    cramers_v_results = compute_cramers_v(df)
+
+    cramers_v_results = sorted(
+        cramers_v_results.items(), key=lambda item: item[1], reverse=True
+    )
+    cramers_v_results = {k: v for k, v in cramers_v_results}
     
-    # results_path = output_dir / "cramers_v_results.csv"
+    results_path = output_dir / "cramers_v_results.csv"
     figure_path = output_dir / "cramers_v_heatmap.pdf"
 
-    # with open(results_path, 'w') as f:
-    #     f.write("Column_1,Column_2,Cramers_V\n")
-    #     for (col1, col2), v in cramers_v_results.items():
-    #         f.write(f"{col1},{col2},{v:.4f}\n")
+    with open(results_path, 'w') as f:
+        f.write("Column_1,Column_2,Cramers_V\n")
+        for (col1, col2), v in cramers_v_results.items():
+            f.write(f"{col1},{col2},{v:.4f}\n")
 
     corr_matrix = compute_correlation_matrix(df)
     plot_correlation_heatmap(corr_matrix, output_path=figure_path)

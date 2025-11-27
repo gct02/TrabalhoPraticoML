@@ -35,9 +35,10 @@
 \large Modelos Interpretáveis para Previsão de Gravidade de Casos de Dengue}
 \author{Gabriel Carvalho Tavares \\ Maximus Borges da Rosa}
 \date{
+    Profa. Dra. Mariana Recamonde Mendoza \\
+    \vspace{0.5cm}
     Universidade Federal do Rio Grande do Sul \\
-    Professora: Nome da Professora \\
-    \vspace{1cm}
+    \vspace{0.5cm}
     \today
 }
 
@@ -56,309 +57,609 @@ Este relatório apresenta o desenvolvimento de um modelo de aprendizado de máqu
 \section{Definição do Problema e Coleta de Dados}
 %==============================================================================
 
-Nosso trabalho tem como objetivo desenvolver um modelo baseado em AM para prever a gravidade de um caso de dengue a partir de informações gerais do paciente, dados de residência, características da notificação individual, dados clínicos e dados laboratoriais de pacientes. Para tanto, utilizamos o conjunto de dados do Sistema de Informação de Agravos de Notificação (SINAN), disponibilizado em Base dos Dados Base dos Dados - Conjuntos de dados abertos pelo Ministério da Saúde.
-
 \subsection{Contextualização}
-% Descreva o contexto do problema de dengue no Brasil
-% Importância da classificação de gravidade
+A dengue faz parte de um grupo de doenças denominadas arboviroses, que se caracterizam por serem causadas por vírus transmitidos por vetores artrópodes. No Brasil, o vetor da dengue é a fêmea do mosquito Aedes aegypti (significa "odioso do Egito"). Os vírus dengue (DENV) estão classificados cientificamente na família Flaviviridae e no gênero Orthoflavivirus. Até o momento são conhecidos quatro sorotipos – DENV-1, DENV-2, DENV-3 e DENV-4 –, que apresentam distintos materiais genéticos (genótipos) e linhagens.
+
+Aspectos como a urbanização, o crescimento desordenado da população, o saneamento básico deficitário e os fatores climáticos mantêm as condições favoráveis para a presença do vetor, com reflexos na dinâmica de transmissão desses arbovírus. A dengue possui padrão sazonal, com aumento do número de casos e o risco para epidemias, principalmente entre os meses de outubro de um ano a maio do ano seguinte.
+
+Todas as faixas etárias são igualmente suscetíveis à doença, porém as pessoas mais velhas e aquelas que possuem doenças crônicas, como diabetes e hipertensão arterial, têm maior risco de evoluir para casos graves e outras complicações que podem levar à morte.
+
+Em 2014, o Brasil começou a adotar a nova classificação de casos de dengue da Organização Mundial da Saúde (OMS), sendo estes atualmente classificados como dengue, dengue com sinais de alarme e dengue grave.
+
+
 % Justificativa para uso de ML
+
+% ***************************************
 
 \subsection{Definição do Problema}
 % Problema de classificação multiclasse
 % Classes: low_risk, alarm, severe
 % Objetivo: predizer gravidade com base em características clínicas
+Nosso trabalho tem como objetivo desenvolver um modelo baseado em AM para prever a gravidade de um caso de dengue - segundo a classificação da OMS - a partir de informações gerais do paciente, dados de residência, características da notificação individual, dados clínicos e dados laboratoriais de pacientes. 
 
 \subsection{Fonte dos Dados}
 % SINAN (Sistema de Informação de Agravos de Notificação)
 % Período de coleta
 % Número inicial de registros
 % Descrição das variáveis disponíveis
+Para tanto, utilizamos o conjunto de dados do Sistema de Informação de Agravos de Notificação (SINAN), disponibilizado pelo Ministério da Saúde.
+
+\subsubsection{Processo de Coleta e Filtragem dos Dados}
+
+O dataset foi construído através de uma estratégia de filtragem temporal para balancear melhor a representação das classes:
+
+\begin{itemize}
+    \item \textbf{Classe low\_risk}: dados coletados exclusivamente do ano de 2021
+    \item \textbf{Classes alarm e severe}: dados coletados de todo o período disponível, cuja classificação segue o padrão da OMS (01/01/2014 a 11/08/2025)
+\end{itemize}
+
+Esta abordagem foi adotada devido ao volume significativamente maior de casos de baixo risco em comparação com as classes minoritárias.
+
+O ano de 2021 foi escolhido por ser recente e conter uma quantidade substancial de registros, garantindo uma amostra representativa da classe low\_risk.
+% ***************************************
 
 \subsection{Caracterização do Dataset}
-% Número de features
-% Tipos de atributos (categóricos, numéricos)
-% Distribuição das classes (desbalanceamento)
+
+O conjunto de dados é composto por \textbf{716.917 registros} de casos de dengue notificados no Brasil. O dataset está estruturado para uma tarefa de \textbf{aprendizado supervisionado}, especificamente para um problema de \textbf{classificação multiclasse}.
+
+O objetivo é construir um modelo preditivo capaz de classificar a gravidade de um caso de dengue (\texttt{severity}) com base em um conjunto de atributos demográficos, comorbidades e sintomas apresentados pelo paciente. 
+
+O atributo alvo (\texttt{severity}) define a gravidade do caso de dengue. Ele está dividido em três classes, cujas distribuições são mostradas na Tabela~\ref{tab:class_distribution}.
+
+A principal característica deste atributo é o \textbf{forte desbalanceamento de classes}. A classe \texttt{severe}, que representa os casos de maior criticidade e é, presumivelmente, a mais importante de se prever corretamente, é significativamente minoritária. Este desbalanceamento é o maior desafio do dataset, e torna indispensável o uso de técnicas de \textit{resampling}.
+
+O dataset contém 42 atributos preditores (\textit{features}) que fornecem o contexto para o modelo. Dentre estes atributos há dados nominais (codificados como one-hot), binários e numéricos contínuos. A Tabela~\ref{tab:atributos} descreve estes atributos.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{l l c}
+\hline
+\textbf{Nome do Atributo} & \textbf{Codificação} & \textbf{Dimensão} \\
+\hline
+idade\_paciente & real & - \\
+dias\_sintomas\_notificacao & real & - \\
+\hline
+possui\_doenca\_autoimune & binary & - \\
+possui\_diabetes & binary & - \\
+possui\_doencas\_hematologicas & binary & - \\
+possui\_hepatopatias & binary & - \\
+possui\_doenca\_renal & binary & - \\
+possui\_hipertensao & binary & - \\
+possui\_doenca\_acido\_peptica & binary & - \\
+apresenta\_febre & binary & - \\
+apresenta\_cefaleia & binary & - \\
+apresenta\_exantema & binary & - \\
+apresenta\_dor\_costas & binary & - \\
+apresenta\_mialgia & binary & - \\
+apresenta\_vomito & binary & - \\
+apresenta\_conjutivite & binary & - \\
+apresenta\_dor\_retroorbital & binary & - \\
+apresenta\_artralgia & binary & - \\
+apresenta\_artrite & binary & - \\
+apresenta\_leucopenia & binary & - \\
+apresenta\_petequias & binary & - \\
+prova\_laco & binary & - \\
+\hline
+sigla\_uf\_residencia & one-hot & 5 \\
+sexo\_paciente & one-hot & 2 \\
+raca\_cor\_paciente & one-hot & 6 \\
+gestante\_paciente & one-hot & 7 \\
+\hline
+\end{tabular}
+\caption{Caracterização dos atributos do dataset.}
+\label{tab:atributos}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\hline
+\textbf{Classe} & \textbf{Número de Exemplos} \\
+\hline
+low\_risk & 420.850 \\
+alarm & 267.544 \\
+severe & 28.523 \\
+\hline
+\textbf{Total} & \textbf{716.917} \\
+\hline
+\end{tabular}
+\caption{Distribuição de exemplos por classe no dataset.}
+\label{tab:class_distribution}
+\end{table}
 
 %==============================================================================
 \section{Análise Exploratória}
 %==============================================================================
 
-\subsection{Análise Descritiva}
-% Estatísticas descritivas das variáveis numéricas
-% Tabelas de frequência para variáveis categóricas
-
-\subsection{Distribuição das Classes}
-% Gráfico de distribuição das classes
-% Discussão sobre desbalanceamento
+A Figura~\ref{fig:cramers_v_heatmap} mostra a correlação, indicada pela medida de associação V de Cramer, entre cada par de features do dataset. Visto que a maioria dos atributos dos dados são categóricos, convertemos os atributos originalmente numéricos para categóricos (utilizando intervalos de valores) para possibilitar o uso da métrica V de Cramer.
 
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=0.7\textwidth]{figures/class_distribution.png}
-    \caption{Distribuição das classes no dataset.}
-    \label{fig:class_dist}
+    \includegraphics[width=1.0\linewidth]{figures/cramers_v_heatmap.pdf}
+    \caption{Matriz de correlação entre features do dataset.}
+    \label{fig:cramers_v_heatmap}
 \end{figure}
 
-\subsection{Análise de Correlação}
-% Matriz de correlação entre variáveis numéricas
-% Identificação de features relevantes
+\begin{figure} [H]
+    \centering
+    \includegraphics[width=1\linewidth]{figures/decision_tree.pdf}
+    \caption{Exemplo gráfico de uma árvore de decisão.}
+    \label{fig:placeholder}
+\end{figure}
 
-\subsection{Análise de Valores Ausentes}
-% Percentual de missing values por feature
-% Estratégias para tratamento
-
-\subsection{Detecção de Outliers}
-% Box plots
-% Análise de valores extremos
+É interessante notar que existe uma variável com forte correlação com a variável alvo (\texttt{severity}), mensurada pelo V de Cramer Esse achado aponta \texttt{apresenta\_leucopenia} como uma variável-chave para prever a severidade dos casos.
 
 %==============================================================================
 \section{Pré-processamento}
 %==============================================================================
 
 \subsection{Tratamento de Valores Ausentes}
-% Métodos utilizados (remoção, imputação)
-% Justificativa das escolhas
 
-\subsection{Codificação de Variáveis Categóricas}
-% One-hot encoding
-% Label encoding
-% Features categóricas tratadas
+O conjunto de \textit{features} selecionado, composto por dados demográficos e clínicos básicos, apresentou uma baixa incidência de valores faltantes. Adotamos uma estratégia de tratamento segmentada, dependendo do atributo com dado ausente:
 
-\subsection{Normalização e Padronização}
-% Normalização de features numéricas
-% Método utilizado (StandardScaler, MinMaxScaler)
-% Importância da normalização para os algoritmos escolhidos
+\begin{itemize}
+    \item \textbf{Remoção de Instâncias:} Para atributos essenciais à classificação, onde a imputação de valores artificiais não é confiável (como, por exemplo, \texttt{idade\_paciente}), optou-se pela remoção completa das instâncias (linhas) com valores faltantes.
+    
+    \item \textbf{Imputação por Valor Negativo (Moda):} Nos casos de atributos binários referentes a comorbidades ou sintomas, os valores ausentes foram imputados com \textbf{0} (negativo). Esta abordagem se justifica por ser o valor mais frequente (a moda) para todas essas \textit{features}.
+    
+    \item \textbf{Imputação por Categoria Específica:} Para atributos categóricos que já possuem um valor específico para "não informado" em seu domínio (como \texttt{raca\_cor\_paciente} e \texttt{gestante\_paciente}), este valor foi atribuído aos campos faltantes.
+\end{itemize}
+
+\subsection{Codificação, Normalização e Padronização de Variáveis}
+
+Foi utilizada a codificação \textit{One-Hot Encoding} para variáveis categóricas que não poderiam ser interpretadas como binárias. Variáveis referentes à comorbidades e sintomas do paciente, cujos valores correspondem à respostas "sim" e "não" foram codificadas como binárias. 
+
+As únicas variáveis efetivamente numéricas do nosso dataset são as variáveis como \texttt{idade\_paciente} e \texttt{dias\_sintomas\_notificacao}, e estas foram representadas como números reais. Removemos do conjunto de dados todos os exemplos contendo valores negativos para estes atributos e, no caso do atributo \texttt{idade\_paciente}, removemos também os exemplos com valor maior que 120 neste atributo. As variáveis numéricas foram normalizadas utilizando \textit{Standard Scaler}, com estatísticas computadas exclusivamente do conjunto de treinamento.
+
+O atributo alvo (\texttt{severity}) for codificado com \textit{Label Encoding}.
 
 \subsection{Tratamento de Desbalanceamento}
-% Técnicas utilizadas (SMOTE, undersampling, class_weight)
-% Justificativa da abordagem escolhida
-% Impacto nas distribuições das classes
 
-\begin{table}[H]
-    \centering
-    \caption{Distribuição das classes antes e após balanceamento.}
-    \label{tab:balancing}
-    \begin{tabular}{lcc}
-        \toprule
-        \textbf{Classe} & \textbf{Antes} & \textbf{Após} \\
-        \midrule
-        Low Risk & X & Y \\
-        Alarm & X & Y \\
-        Severe & X & Y \\
-        \bottomrule
-    \end{tabular}
+O desbalanceamento de classes é um dos principais desafios deste dataset, conforme evidenciado na Tabela~\ref{tab:class_distribution}.
+
+Este desbalanceamento severo pode levar os algoritmos de aprendizado a apresentarem \textit{bias} em favor das classes majoritárias, resultando em baixo desempenho na predição de casos graves. Para mitigar este problema, adotamos uma abordagem combinada que integra três técnicas complementares:
+
+\subsubsection{Random Under Sampler}
+
+Para reduzir a dominância da classe majoritária (\texttt{low\_risk}), aplicamos subamostragem aleatória (\textit{Random Under Sampling}), reduzindo o número de exemplos desta classe para igualar à quantidade de exemplos da classe intermediária (\texttt{alarm}). Esta técnica tem como objetivo:
+
+\begin{itemize}
+    \item Reduzir o viés do modelo em favor da classe majoritária
+    \item Diminuir o custo computacional do treinamento
+    \item Balancear a influência das classes no processo de aprendizado
+\end{itemize}
+
+\subsubsection{SMOTE (Synthetic Minority Over-sampling Technique)}
+
+Para a classe minoritária (\texttt{severe}), utilizamos SMOTE, uma técnica de sobreamostragem sintética que gera novos exemplos através de interpolação entre exemplos existentes no espaço de características. O SMOTE foi configurado para aumentar o número de exemplos da classe \texttt{severe} até igualar às demais classes.
+
+As principais vantagens do SMOTE sobre a simples duplicação de exemplos incluem:
+
+\begin{itemize}
+    \item Redução do risco de \textit{overfitting}, pois não replica exemplos idênticos
+    \item Expansão das regiões de decisão da classe minoritária
+    \item Melhoria na capacidade de generalização do modelo
+\end{itemize}
+
+\subsubsection{Class Weight Balancing}
+
+Complementarmente, utilizamos o parâmetro \texttt{class\_weight='balanced'} nos algoritmos que suportam esta configuração. Este parâmetro ajusta automaticamente os pesos das classes inversamente proporcionais às suas frequências, penalizando mais os erros nas classes minoritárias durante o treinamento.
+
+\subsubsection{Pipeline de Amostragem}
+
+O tratamento foi implementado através de um pipeline sequencial que aplica primeiro a subamostragem e depois a sobreamostragem sintética. A Tabela~\ref{tab:resampling_distribution} mostra a distribuição das classes antes e após a aplicação das técnicas de amostragem no conjunto de treinamento.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Classe} & \textbf{Original} & \textbf{Após Amostragem} \\
+\hline
+low\_risk & 294.594 & 187.280 \\
+alarm & 187.280 & 187.280 \\
+severe & 19.967 & 187.280 \\
+\hline
+\textbf{Total} & \textbf{501.841} & \textbf{561.840} \\
+\hline
+\end{tabular}
+\caption{Distribuição de classes antes e após amostragem com SMOTE e Random Under Sampler no conjunto de treinamento.}
+\label{tab:resampling_distribution}
 \end{table}
 
-\subsection{Seleção de Features}
-% Features removidas e justificativa
-% Features mantidas
-% Critérios de seleção
+Após a aplicação da estratégia combinada, todas as três classes ficaram perfeitamente balanceadas com 187.280 exemplos cada. É importante ressaltar que estas técnicas foram aplicadas \textbf{exclusivamente no conjunto de treinamento}, mantendo os conjuntos de validação e teste com suas distribuições originais para garantir uma avaliação realista do desempenho do modelo em dados do mundo real.
 
+
+% ***************************************
 %==============================================================================
 \section{Definição da Abordagem, Algoritmos e Estratégia de Avaliação}
 %==============================================================================
 
-\subsection{Abordagem Geral}
-% Pipeline de ML adotado
-% Fluxo de trabalho
+\subsection{Algoritmos Selecionados}
+
+Foi escolhido um conjunto diversificado de algoritmos que representam diferentes paradigmas do aprendizado de máquina. O objetivo é comparar modelos lineares, probabilísticos, baseados em árvores e métodos de \textit{ensemble}, permitindo analisar o equilíbrio entre interpretabilidade - crucial para em um trabalho relacionado à área da saúde - e desempenho preditivo. 
+
+% ***************************************
+%==============================================================================
+\section{Definição da Abordagem, Algoritmos e Estratégia de Avaliação}
+%==============================================================================
 
 \subsection{Algoritmos Selecionados}
-% Justificativa da escolha dos algoritmos
+
+Foi escolhido um conjunto diversificado de algoritmos que representam diferentes paradigmas do aprendizado de máquina. O objetivo é comparar modelos lineares, probabilísticos, baseados em árvores e métodos de \textit{ensemble}, permitindo analisar o equilíbrio entre interpretabilidade - crucial para em um trabalho relacionado à área da saúde - e desempenho preditivo. 
+
 \subsubsection{Árvore de Decisão}
-% Características do algoritmo
-% Vantagens e desvantagens
-% Hiperparâmetros principais
+
+As Árvores de Decisão são modelos não paramétricos que aprendem regras de decisão hierárquicas extraídas dos dados.
+
+\begin{itemize}
+\item \textbf{Características:} São modelos de “caixa-branca”, altamente interpretáveis e capazes de lidar nativamente com dados numéricos e categóricos.
+\item \textbf{Vantagens e desvantagens:} Destacam-se pela interpretabilidade, mas tendem ao \textit{overfitting} e podem ser instáveis, pois pequenas mudanças nos dados podem gerar árvores significativamente diferentes.
+\item \textbf{Hiperparâmetros principais:} profundidade máxima da árvore (\texttt{max\_depth}) e número mínimo de amostras para divisão de um nó (\texttt{min\_samples\_split}), que controlam a complexidade do modelo.
+\end{itemize}
 
 \subsubsection{Random Forest}
-% Ensemble learning
-% Redução de variância
-% Hiperparâmetros
+
+O Random Forest é um método de \textit{ensemble} baseado na construção de múltiplas árvores de decisão.
+
+\begin{itemize}
+\item \textbf{Ensemble Learning:} Utiliza \textit{bagging}, onde cada árvore é treinada em uma subamostra aleatória dos dados. A predição final resulta da votação entre as árvores.
+\item \textbf{Redução de variância:} A combinação das árvores reduz a variância e mitiga o \textit{overfitting} típico de árvores individuais, aumentando a robustez do modelo.
+\item \textbf{Hiperparâmetros principais:} número de árvores (\texttt{n\_estimators}) e profundidade máxima (\texttt{max\_depth}).
+\end{itemize}
 
 \subsubsection{Gradient Boosting}
-% XGBoost ou LightGBM
-% Boosting vs Bagging
-% Configurações
 
-\subsubsection{Outros Algoritmos}
-% SVM, KNN, Naive Bayes, etc.
-% Breve descrição
+O Gradient Boosting também é um método de \textit{ensemble}, mas baseado em \textit{boosting}.
+
+\begin{itemize}
+\item \textbf{Boosting vs. Bagging:} Ao contrário do \textit{bagging}, o \textit{boosting} constrói árvores de forma sequencial, onde cada nova árvore busca corrigir os erros da anterior, focando nas amostras mais difíceis.
+\item \textbf{Implementações:} Foi utilizada a biblioteca XGBoost, reconhecida pelo alto desempenho e eficiência.
+\item \textbf{Hiperparâmetros principais:} número de estimadores (\texttt{n\_estimators}), taxa de aprendizado (\texttt{learning\_rate}) e profundidade das árvores.
+\end{itemize}
+
+\subsubsection{Naive Bayes}
+
+O Naive Bayes é um classificador probabilístico baseado no Teorema de Bayes, assumindo independência condicional entre os atributos.
+
+\begin{itemize}
+\item \textbf{Características:} Treinamento e predição extremamente rápidos. Lida bem com conjuntos de dados de alta dimensionalidade e é adequado como \textit{baseline}.
+\item \textbf{Vantagens e desvantagens:} Embora simples e eficiente, a suposição de independência raramente se verifica na prática, podendo limitar seu desempenho preditivo.
+\end{itemize}
+
+\subsubsection{Regressão Logística Multinomial}
+
+A Regressão Logística é um modelo linear generalizado usado para classificação, cuja versão multinomial atende problemas com mais de duas classes.
+
+\begin{itemize}
+\item \textbf{Características:} Modelo interpretável, em que os coeficientes indicam a influência de cada atributo sobre a probabilidade de cada classe.
+\item \textbf{Vantagens e desvantagens:} É eficiente e fornece uma boa \textit{baseline} linear. Por outro lado, não captura relações complexas ou não lineares entre os atributos.
+\end{itemize}
+
+
+\subsubsection{MLP (Multi-layer Perceptron)}
+
+O Multi-layer Perceptron (MLP) é uma rede neural artificial feedforward composta por camadas totalmente conectadas. É um modelo capaz de aprender relações não lineares complexas a partir dos dados.
+
+\begin{itemize}
+\item \textbf{Características:} Utiliza uma ou mais camadas ocultas com funções de ativação não lineares (como ReLU ou Tanh), permitindo aprender representações internas mais expressivas do que modelos lineares. Requer normalização dos atributos de entrada para um bom desempenho.
+
+\item \textbf{Vantagens e desvantagens:} Possui alta capacidade de modelar relações não lineares e interações entre atributos. Entretanto, é menos interpretável do que modelos lineares e métodos baseados em árvores, e pode exigir maior tempo de treinamento, ser sensível à escolha dos hiperparâmetros e propenso a \textit{overfitting} em bases pequenas.
+
+\item \textbf{Hiperparâmetros principais:} número e tamanho das camadas ocultas (\texttt{hidden\_layer\_sizes}), taxa de aprendizado, função de ativação, regularização (\texttt{alpha}) e número máximo de iterações de treinamento.
+
+\end{itemize}
 
 \subsection{Estratégia de Avaliação}
 
 \subsubsection{Particionamento dos Dados}
-% Holdout (70/15/15)
-% Conjunto de treino, validação e teste
-% Estratificação
 
-\subsubsection{Validação Cruzada}
-% K-fold cross-validation
-% Leave-One-Out CV (se aplicável)
+Para avaliar adequadamente o desempenho dos modelos, o dataset foi dividido em três conjuntos independentes seguindo uma estratégia de \textit{holdout} estratificada:
+
+\begin{itemize}
+    \item \textbf{Conjunto de Teste (15\%):} Separado inicialmente e mantido isolado durante todo o processo de desenvolvimento. Este conjunto é utilizado exclusivamente para a avaliação final do modelo otimizado, garantindo uma estimativa não enviesada do desempenho em dados nunca vistos.
+    
+    \item \textbf{Conjunto de Treinamento (70\%):} Utilizado para o ajuste dos parâmetros dos modelos. É neste conjunto que são aplicadas as técnicas de balanceamento (SMOTE e Random Under Sampling).
+    
+    \item \textbf{Conjunto de Validação (15\%):} Utilizado para avaliar o desempenho dos modelos durante a seleção de hiperparâmetros e para detectar \textit{overfitting}. Mantém a distribuição original das classes para refletir melhor o cenário real.
+\end{itemize}
+
+A divisão foi realizada de forma \textbf{estratificada}, preservando a proporção original das classes em cada conjunto. Isso é especialmente importante dado o forte desbalanceamento do dataset, garantindo que cada partição seja representativa da distribuição geral.
+
+Para o treinamento final do modelo selecionado, os conjuntos de treinamento e validação são combinados (85\% dos dados totais), maximizando a quantidade de informação disponível para o aprendizado, enquanto o conjunto de teste permanece isolado para avaliação.
 
 \subsubsection{Métricas de Avaliação}
-% Accuracy
-% Precision, Recall, F1-Score
-% Macro avg vs Weighted avg
-% Justificativa das métricas escolhidas para problema desbalanceado
 
-\subsubsection{Otimização de Hiperparâmetros}
-% Grid Search ou Random Search
-% Hiperparâmetros tunados
-% Métrica de otimização (F1-macro)
+Dado o forte desbalanceamento de classes do dataset e a importância clínica diferenciada de cada classe (especialmente \texttt{severe}), as seguintes métricas foram utilizadas:
+
+\begin{itemize}
+    \item \textbf{F1-Score Macro:} Métrica principal de avaliação. Calcula o F1-Score de cada classe separadamente e depois computa a média não ponderada. Esta métrica trata todas as classes com igual importância, sendo adequada para problemas desbalanceados onde o desempenho nas classes minoritárias é crítico.
+
+    \item \textbf{F1-Score por Classe:} Média harmônica entre precisão e revocação para cada classe individual, permitindo análise detalhada do desempenho.
+
+    \item \textbf{Recall:} Proporção de casos reais da classe que foram corretamente identificados. Alta revocação é crucial para a classe \texttt{severe}, pois falsos negativos podem ter consequências graves.
+    
+    \item \textbf{Precision:} Proporção de predições positivas corretas. Alta precisão indica baixa taxa de falsos positivos, importante para evitar alarmes desnecessários.
+    
+    
+
+    
+    \item \textbf{Accuracy:} Proporção total de predições corretas. Embora seja uma métrica intuitiva, é menos informativa em problemas desbalanceados, servindo apenas como referência complementar.
+    
+    \item \textbf{F1-Score Weighted:} Média ponderada do F1-Score de cada classe pelo número de exemplos. Fornece uma visão do desempenho geral considerando a distribuição real das classes.
+\end{itemize}
+
 
 %==============================================================================
 \section{Spot-checking de Algoritmos}
 %==============================================================================
 
 \subsection{Metodologia}
-% Descrição do processo de spot-checking
-% Configurações iniciais dos modelos
-% Baseline de comparação
+
+Para comparar os modelos selecionados de forma justa, realizamos o treinamento e avaliação com as mesmas partições do conjunto de dados e utilizando exatamente o mesmo \textit{pipeline} de amostragem. 
+
+Para os modelos baseados em árvore (Árvore de Decisão, Random Forest e XGBoost), realizamos uma rápida exploração sobre diferentes valores de profundidade máxima, escolhendo aquele cujos resultados foram melhores no conjunto de validação para avaliar o modelo sobre o conjunto de teste.
 
 \subsection{Resultados do Spot-checking}
 
 \subsubsection{Árvore de Decisão}
-% Resultados iniciais
-% Análise de overfitting/underfitting
-% Profundidade da árvore
 
-\begin{table}[H]
-    \centering
-    \caption{Métricas da Árvore de Decisão no conjunto de validação.}
-    \label{tab:dt_metrics}
-    \begin{tabular}{lccc}
-        \toprule
-        & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
-        \midrule
-        Macro Avg & 0.XXX & 0.XXX & 0.XXX \\
-        Weighted Avg & 0.XXX & 0.XXX & 0.XXX \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\subsubsection{Random Forest}
-% Resultados
-% Comparação com árvore única
-
-\subsubsection{Gradient Boosting}
-% Desempenho
-% Tempo de treinamento
-
-\subsubsection{Outros Algoritmos}
-% Resultados dos demais modelos testados
-
-\subsection{Comparação de Desempenho}
-
-\begin{table}[H]
-    \centering
-    \caption{Comparação de F1-Score (Macro) entre algoritmos.}
-    \label{tab:comparison}
-    \begin{tabular}{lcc}
-        \toprule
-        \textbf{Algoritmo} & \textbf{F1-Score (Validação)} & \textbf{Tempo (s)} \\
-        \midrule
-        Árvore de Decisão & 0.XXX & X.XX \\
-        Random Forest & 0.XXX & X.XX \\
-        Gradient Boosting & 0.XXX & X.XX \\
-        SVM & 0.XXX & X.XX \\
-        \bottomrule
-    \end{tabular}
-\end{table}
+A Figura~\ref{fig:dt_f1_vs_depth} mostra a performance (medida através da métrica F1-Score) do modelo com diferentes valores de profundidade máxima. A partir da profundidade máxima 15, podemos observar um forte \textit{overfitting}, visto que a performance do modelo melhora substancialmente no conjunto de treinamento enquanto, no conjunto de validação, pouca (ou nenhuma, a partir da profundidade máxima 20) melhoria é observada.
 
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=0.8\textwidth]{figures/model_comparison.png}
-    \caption{Comparação visual de desempenho dos algoritmos.}
-    \label{fig:model_comp}
+    \includegraphics[width=0.9\linewidth]{figures/dt_f1_vs_depth.pdf}
+    \caption{
+        Variação do F1-Macro em função da profundidade máxima.
+    }
+    \label{fig:dt_f1_vs_depth}
 \end{figure}
 
-\subsection{Seleção do Modelo Base}
-% Critérios de seleção
-% Modelo escolhido para otimização
+A Figura~\ref{fig:dt_confusion_matrix} mostra a matriz de confusão da Árvore de Decisão sobre o conjunto de teste. É possível perceber que a classe minoritária (\texttt{severe}), mesmo com a utilização de técnicas de amostragem durante o treinamento, ainda representa a classe cujo modelo possui maior dificuldade em classificar corretamente. Em particular, observa-se que o modelo tende a classificar exemplos da classe \texttt{severe} como \texttt{alarm}.
 
-%==============================================================================
-\section{Otimização e Avaliação Final}
-%==============================================================================
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/dt_confusion_matrix.pdf}
+    \caption{
+        Matriz de confusão da Árvore de Decisão.
+    }
+    \label{fig:dt_confusion_matrix}
+\end{figure}
 
-\subsection{Treinamento Final}
-% Retreinamento com treino + validação
-% Configuração final do modelo
+A Figura~\ref{fig:dt_metrics_by_class} mostra a performance, por classe, da Árvore de Decisão no conjunto de teste. Essa Árvore de Decisão foi instanciada com o valor de profundidade máxima que resultou na melhor performance no conjunto de validação. É possível verificar que houve um \textit{overfitting} significativo, mesmo com o \textit{pruning} sendo realizado.
 
-\subsection{Avaliação no Conjunto de Teste}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{figures/dt_metrics_by_class.pdf}
+    \caption{
+        Métricas de performance da Árvore de Decisão por classe.
+    }
+    \label{fig:dt_metrics_by_class}
+\end{figure}
 
-\subsubsection{Métricas Gerais}
+
 \begin{table}[H]
     \centering
-    \caption{Métricas do modelo final no conjunto de teste.}
+    \caption{Métricas de performance da Árvore de Decisão em geral.}
     \label{tab:final_metrics}
     \begin{tabular}{lccc}
         \toprule
         & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
         \midrule
-        Macro Avg & 0.XXX & 0.XXX & 0.XXX \\
-        Weighted Avg & 0.XXX & 0.XXX & 0.XXX \\
+        Macro Avg & 0.510 & 0.532 & 0.518 \\
+        Weighted Avg & 0.666 & 0.647 & 0.654 \\
         \midrule
-        \multicolumn{4}{c}{\textbf{Accuracy: 0.XXX}} \\
+        \multicolumn{4}{c}{\textbf{Accuracy: 0.647}} \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\subsubsection{Métricas por Classe}
-\begin{table}[H]
-    \centering
-    \caption{Desempenho por classe no conjunto de teste.}
-    \label{tab:class_metrics}
-    \begin{tabular}{lccc}
-        \toprule
-        \textbf{Classe} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
-        \midrule
-        Low Risk & 0.XXX & 0.XXX & 0.XXX \\
-        Alarm & 0.XXX & 0.XXX & 0.XXX \\
-        Severe & 0.XXX & 0.XXX & 0.XXX \\
-        \bottomrule
-    \end{tabular}
-\end{table}
 
-\subsubsection{Matriz de Confusão}
+\subsubsection{Random Forest}
+
+A Figura~\ref{fig:rf_f1_vs_depth} mostra a performance (medida através da métrica F1-Score) do modelo com diferentes valores de profundidade máxima. Assim como ocorre com as Árvores de Decisão, a partir da profundidade máxima 15 observamos a ocorrência de \textit{overfitting}.
+
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=0.6\textwidth]{figures/confusion_matrix.png}
-    \caption{Matriz de confusão do modelo final.}
-    \label{fig:confusion}
+    \includegraphics[width=0.9\linewidth]{figures/rf_f1_vs_depth.pdf}
+    \caption{Variação do F1-Macro em função da profundidade máxima.}
+    \label{fig:rf_f1_vs_depth}
 \end{figure}
 
-\subsection{Análise de Erros}
-% Análise dos casos mal classificados
-% Padrões de erro
-% Possíveis causas
+A Figura~\ref{fig:rf_confusion_matrix} mostra a matriz de confusão do Random Forest sobre o conjunto de teste. Assim como observado para a Árvore de Decisão, o modelo teve uma dificuldade bastante significativa de classificar as instâncias da classe \texttt{severe}, onde a maioria destas foram classificadas como \texttt{alarm}.
 
-\subsection{Interpretabilidade}
-% Feature importance (se aplicável)
-% Análise de decisões do modelo
-% SHAP values (opcional)
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/rf_confusion_matrix.pdf}
+    \caption{Matriz de confusão do Random Forest.}
+    \label{fig:rf_confusion_matrix}
+\end{figure}
 
-%==============================================================================
-\section{Sumarização dos Resultados}
-%==============================================================================
+Assim como na Árvore de Decisão, o modelo Random Forest sofreu \textit{overfitting} mesmo com a realização do \textit{pruning}, como mostra a Figura~\ref{fig:rf_metrics_by_class}.
 
-\subsection{Principais Descobertas}
-% Síntese dos resultados obtidos
-% Modelo com melhor desempenho
-% Métricas alcançadas
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{figures/rf_metrics_by_class.pdf}
+    \caption{Métricas de performance do Random Forest por classe.}
+    \label{fig:rf_metrics_by_class}
+\end{figure}
 
-\subsection{Limitações do Estudo}
-% Limitações dos dados
-% Limitações dos modelos
-% Desafios encontrados
+\begin{table}[H]
+    \centering
+    \caption{Métricas de performance do Random Forest em geral.}
+    \label{tab:final_metrics}
+    \begin{tabular}{lccc}
+        \toprule
+        & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        Macro Avg & 0.562 & 0.578 & 0.568 \\
+        Weighted Avg & 0.708 & 0.696 & 0.701 \\
+        \midrule
+        \multicolumn{4}{c}{\textbf{Accuracy: 0.696}} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
-\subsection{Trabalhos Futuros}
-% Possíveis melhorias
-% Outras abordagens a serem testadas
-% Coleta de mais dados
-% Feature engineering adicional
+\subsubsection{Gradient Boosting}
 
-\subsection{Considerações Finais}
-% Conclusão geral do trabalho
-% Aplicabilidade prática
-% Contribuições
+A Figura~\ref{fig:xgb_f1_vs_depth} mostra a performance (medida através da métrica F1-Score) do modelo com diferentes valores de profundidade máxima. Aqui, o \textit{overfitting} ocorre a partir de uma profundidade menor do que o observado nos modelos anteriores (Árvore de Decisão e Random Forest).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/xgb_f1_vs_depth.pdf}
+    \caption{Variação do F1-Macro em função da profundidade máxima.}
+    \label{fig:xgb_f1_vs_depth}
+\end{figure}
+
+A Figura~\ref{fig:xgb_confusion_matrix} mostra a matriz de confusão do XGBoost sobre o conjunto de teste. Assim como observado para os modelos anteriores, a classificação das instâncias da classe minoritária (\texttt{severe}) representa um desafio considerável.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/xgb_confusion_matrix.pdf}
+    \caption{Matriz de confusão do XGBoost.}
+    \label{fig:xgb_confusion_matrix}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{figures/xgb_metrics_by_class.pdf}
+    \caption{Métricas de performance do XGBoost por classe.}
+    \label{fig:xgb_metrics_by_class}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \caption{Métricas de performance do XGBoost em geral.}
+    \label{tab:final_metrics}
+    \begin{tabular}{lccc}
+        \toprule
+        & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        Macro Avg & 0.610 & 0.542 & 0.557 \\
+        Weighted Avg & 0.714 & 0.711 & 0.709 \\
+        \midrule
+        \multicolumn{4}{c}{\textbf{Accuracy: 0.711}} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Regressão Logística Multinomial}
+
+A Figura~\ref{fig:lr_confusion_matrix} mostra a matriz de confusão da Regressão Logística Multinomial sobre o conjunto de teste. Diferentemente do observado nos modelos baseados em árvore, a matriz de confusão mostra que a performance deste modelo não foi significativamente impactada pelo desbalanceamento da classe minoritária.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/lr_confusion_matrix.pdf}
+    \caption{Matriz de confusão da Regressão Logística Multinomial.}
+    \label{fig:lr_confusion_matrix}
+\end{figure}
+
+Observa-se, na Figura~\ref{fig:lr_metrics_by_class}, que a Regressão Logística Multinomial, embora apresente métricas de Precisão e F1-Macro significativamente inferiores às dos modelos baseados em árvore, obteve um \textbf{\textit{recall} superior para a classe minoritária (\texttt{severe})}.
+
+Isso sugere que a menor complexidade da Regressão Logística atuou como uma regularização, \textbf{impedindo um sobreajuste (overfitting) às classes majoritárias} (\texttt{alarm} e \texttt{low\_risk}). Ao não se adaptar excessivamente aos padrões dos dados majoritários, o modelo linear manteve uma sensibilidade (recall) maior para a classe \texttt{severe}, embora ao custo de uma menor precisão geral.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{figures/lr_metrics_by_class.pdf}
+    \caption{Métricas de performance da Regressão Logística Multinomial por classe.}
+    \label{fig:lr_metrics_by_class}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \caption{Métricas de performance da Regressão Logística Multinomial em geral.}
+    \label{tab:final_metrics}
+    \begin{tabular}{lccc}
+        \toprule
+        & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        Macro Avg & 0.479 & 0.561 & 0.463 \\
+        Weighted Avg & 0.664 & 0.576 & 0.608 \\
+        \midrule
+        \multicolumn{4}{c}{\textbf{Accuracy: 0.576}} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subsubsection{Naive Bayes Gaussiano}
+
+A Figura~\ref{fig:nb_confusion_matrix} mostra a matriz de confusão do modelo Naive Bayes Gaussiano sobre o conjunto de teste. Aqui, o modelo não possui, como maior fonte de erro, os exemplos da classe \texttt{severe}, mas sim, os exemplos da classe \texttt{alarm}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/nb_confusion_matrix.pdf}
+    \caption{Matriz de confusão do Naive Bayes Gaussiano.}
+    \label{fig:nb_confusion_matrix}
+\end{figure}
+
+De forma análoga à Regressão Logística, os resultados do Naive Bayes Gaussiano (Figura~\ref{fig:nb_metrics_by_class}) indicam que a menor complexidade do modelo \textbf{impede} o \textit{overfitting} às classes majoritárias. Contudo, embora esse comportamento aumente o \textit{recall} da classe minoritária, ele o faz ao custo de uma redução na precisão geral. No caso do Naive Bayes, \textbf{essa penalidade na precisão foi significativamente mais pronunciada}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{figures/nb_metrics_by_class.pdf}
+    \caption{Métricas de performance do Naive Bayes por classe.}
+    \label{fig:nb_metrics_by_class}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \caption{Métricas de performance do Naive Bayes Gaussiano em geral.}
+    \label{tab:final_metrics}
+    \begin{tabular}{lccc}
+        \toprule
+        & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        Macro Avg & 0.455 & 0.505 & 0.365 \\
+        Weighted Avg & 0.632 & 0.530 & 0.517 \\
+        \midrule
+        \multicolumn{4}{c}{\textbf{Accuracy: 0.530}} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{MLP (Multi-layer Perceptron)}
+
+A Figura~\ref{fig:mlp_confusion_matrix} mostra a matriz de confusão do MLP sobre o conjunto de teste. A maior fonte de erro para o MLP, assim como ocorre com os modelos baseados em árvore, é a classe minoritária \texttt{severe}. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/mlp_confusion_matrix.pdf}
+    \caption{Matriz de confusão do MLP.}
+    \label{fig:mlp_confusion_matrix}
+\end{figure}
+
+Os resultados apresentados na Figura~\ref{fig:mlp_metrics_by_class} mostram que este modelo se posiciona em um "ponto intermediário" entre os modelos de alto viés (Regressão Logística e Naive Bayes) e os de alta variância (baseados em árvores). Para avaliar o modelo MLP, utilizamos um número fixo de camadas ocultas, de dimensões também fixas (\texttt{(64, 32)}). Essa escolha de hiper-parâmetros representa uma configuração razoavelmente rasa, e o modelo resultante não possui uma grande quantidade de parâmetros aprendíveis, o que explica o, bastante provável, alto viés apresentado pelo modelo. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{figures/mlp_metrics_by_class.pdf}
+    \caption{Métricas de performance do MLP por classe.}
+    \label{fig:mlp_metrics_by_class}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \caption{Métricas de performance do MLP em geral.}
+    \label{tab:final_metrics}
+    \begin{tabular}{lccc}
+        \toprule
+        & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        Macro Avg & 0.513 & 0.563 & 0.518 \\
+        Weighted Avg & 0.693 & 0.658 & 0.672 \\
+        \midrule
+        \multicolumn{4}{c}{\textbf{Accuracy: 0.658}} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subsection{Estratégias Mais Promissoras}
+
+Para a seleção final dos modelos, o Random Forest e o XGBoost foram escolhidos por apresentarem o melhor desempenho na métrica F1-macro. Este resultado indica uma performance geral superior e um melhor balanceamento na classificação de todas as classes.
+
+Contudo, também pretendemos explorar o comportamento de modelos mais simples e com alto viés, como a Regressão Logística. O objetivo é analisar os diferentes \textit{trade-offs} que esses modelos oferecem em comparação com as abordagens baseadas em árvore, que são mais complexas.
+
 
 %==============================================================================
 \section*{Referências}
@@ -367,12 +668,10 @@ Nosso trabalho tem como objetivo desenvolver um modelo baseado em AM para prever
     \item Scikit-learn Documentation. \url{https://scikit-learn.org/}
     \item Imbalanced-learn Documentation. \url{https://imbalanced-learn.org/}
     \item XGBoost Documentation. \url{https://xgboost.readthedocs.io/}
-    \item SINAN - Sistema de Informação de Agravos de Notificação. Ministério da Saúde.
+    \item SINAN - Sistema de Informação de Agravos de Notificação. Ministério da Saúde. \url{https://portalsinan.saude.gov.br/}
+    \item ScienceDirect - User's guide to correlation coefficients. \url{https://www.sciencedirect.com/science/article/pii/S2452247318302164}
+    \item Dengue - Ministério da Saúde. \url{https://www.gov.br/saude/pt-br/assuntos/saude-de-a-a-z/d/dengue#:~:text=Preven%C3%A7%C3%A3o,no%20sistema%20p%C3%BAblico%20de%20sa%C3%BAde.}
+    \item Dengue - Agência Fiocruz de Notícias. \url{https://agencia.fiocruz.br/dengue}
 \end{enumerate}
-
-
-\section{Resultados Detalhados}
-%==============================================================================
-% Tabelas e gráficos adicionais
 
 \end{document}
