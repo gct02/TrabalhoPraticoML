@@ -96,7 +96,7 @@ def process_diagnosis_delay_as_numeric(diagnosis_delay: str) -> int:
     except Exception:
         return None
     
-    if diagnosis_delay < 0:
+    if diagnosis_delay < 0 or diagnosis_delay > 365:
         return None # Invalid data
     return diagnosis_delay
     
@@ -151,9 +151,14 @@ def process_data(df: pd.DataFrame, as_nominal: bool) -> pd.DataFrame:
     )
 
     if as_nominal:
-        df_cp["idade_paciente"] = df_cp["idade_paciente"].apply(group_age)
-        df_cp["dias_sintomas_notificacao"] = df_cp["dias_sintomas_notificacao"].apply(group_diagnosis_delay)
+        # df_cp["idade_paciente"] = df_cp["idade_paciente"].apply(group_age)
+        # df_cp["dias_sintomas_notificacao"] = df_cp["dias_sintomas_notificacao"].apply(group_diagnosis_delay)
+        df_cp["idade_paciente"] = df_cp["idade_paciente"].apply(process_age_as_numeric)
+        df_cp["dias_sintomas_notificacao"] = df_cp["dias_sintomas_notificacao"].apply(process_diagnosis_delay_as_numeric)
         df_cp = df_cp.dropna(axis=0, how="any", subset=list(NUMERIC_ATTRS))
+
+        for col in NUMERIC_ATTRS:
+            df_cp[col] = pd.to_numeric(df_cp[col], errors='coerce', downcast='float')
     else:
         df_cp["idade_paciente"] = df_cp["idade_paciente"].apply(process_age_as_numeric)
         df_cp["dias_sintomas_notificacao"] = df_cp["dias_sintomas_notificacao"].apply(process_diagnosis_delay_as_numeric)

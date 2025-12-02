@@ -3,10 +3,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from collections import Counter
+from utils.constants import NUMERIC_ATTRS
 
-# NOTE: The data is already normalized
 df = pd.read_csv("../data/3_gold/dataset-processed.csv")
 df = df.sample(n=50000, random_state=42)
+
+# Normalize numeric attributes
+for col in NUMERIC_ATTRS:
+    df[col] = (df[col] - df[col].mean()) / df[col].std()
 
 X = df.drop("severity", axis=1)
 y = df["severity"]
