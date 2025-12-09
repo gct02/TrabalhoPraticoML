@@ -7,3 +7,6 @@ data/3_gold/
 src/Atividade_prática_Árvores_de_Decisão.ipynb
 /data/temp
 /relatorio.tex
+
+/test
+src/hp_tuning.ipynb
